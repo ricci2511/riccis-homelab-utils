@@ -2,7 +2,6 @@ package dupescout
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -39,7 +38,7 @@ func Start(c Cfg) Dupes {
 
 	err := search(c.Path, pairs, sem, wg, &c)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	wg.Wait()
@@ -70,19 +69,18 @@ func producePair(path string, pairs chan<- pair, sem *semaphore.Weighted, wg *sy
 	defer sem.Release(1)
 
 	if err := sem.Acquire(context.Background(), 1); err != nil {
-		log.Fatal(err)
+		log.Printf("Failed to acquire semaphore: %v", err)
+		return
 	}
 
 	key, err := c.KeyGenerator(path)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	if key == "" {
 		return
 	}
-
-	fmt.Println(key)
 
 	pairs <- pair{key, path}
 }

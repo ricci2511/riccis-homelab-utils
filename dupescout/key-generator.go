@@ -1,8 +1,8 @@
 package dupescout
 
 import (
-	"crypto/md5"
 	"encoding/hex"
+	"hash/crc32"
 	"io"
 	"os"
 )
@@ -14,7 +14,7 @@ import (
 // Feel free to implement your custom KeyGenerator.
 type keyGeneratorFunc func(path string) (string, error)
 
-func md5HashString(path string, full bool) (string, error) {
+func crc32HexString(path string, full bool) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -22,7 +22,7 @@ func md5HashString(path string, full bool) (string, error) {
 
 	defer file.Close()
 
-	hash := md5.New()
+	hash := crc32.NewIEEE()
 
 	// Either copy the entire file contents or just the first 16KB.
 	if full {
@@ -40,17 +40,17 @@ func md5HashString(path string, full bool) (string, error) {
 
 // HashKeyGenerator is the default if no KeyGenerator is specified.
 //
-// Generates a md5 hash of the first 16KB of the file contents as the key,
+// Generates a crc32 hash of the first 16KB of the file contents as the key,
 // which should be enough to achieve a good balance of uniqueness, collision
 // resistance, and performance for most files.
 func HashKeyGenerator(path string) (string, error) {
-	return md5HashString(path, false)
+	return crc32HexString(path, false)
 }
 
-// Generates a md5 hash of the entire file contents as the key, which
+// Generates a crc32 hash of the entire file contents as the key, which
 // is a lot slower than HashKeyGenerator but should be more accurate.
 func FullHashKeyGenerator(path string) (string, error) {
-	return md5HashString(path, true)
+	return crc32HexString(path, true)
 }
 
 // MovieTvFileNamesKeyGenerator generates a key based on the movie or series title.

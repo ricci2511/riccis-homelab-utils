@@ -11,30 +11,31 @@ import (
 	"strings"
 )
 
-// ExtFilter is a slice of file extensions to filter by.
+// The `filters` type satisfies the flag.Value interface, therefore it can be used
+// as follows:
 //
-// This type satisfies the flag.Value interface, therefore it can be used
-// as follows: flag.Var(&extFilter, "ext", "filter by file extension")
+// `flag.Var(&cfg.ExtInclude, "include", "extensions to include")`
 //
 // Extensions can be provided as a csv or space separated list.
-type ExtFilter []string
+type Filters []string
 
-func (e *ExtFilter) String() string {
+func (f *Filters) String() string {
 	return ""
 }
 
-func (e *ExtFilter) Set(val string) error {
+func (f *Filters) Set(val string) error {
 	vals := strings.FieldsFunc(val, func(r rune) bool {
 		return r == ' ' || r == ','
 	})
-	*e = append(*e, vals...)
+	*f = append(*f, vals...)
 	return nil
 }
 
 type Cfg struct {
 	Path         string           // path to search for duplicates
 	IgnoreHidden bool             // ignore hidden files and directories
-	ExtFilter                     // filter by file extension
+	ExtInclude   Filters          // file extensions to include (higher priority than exclude)
+	ExtExclude   Filters          // file extensions to exclude
 	KeyGenerator keyGeneratorFunc // key generator function to use
 }
 
@@ -43,7 +44,14 @@ func (c *Cfg) String() string {
 	keygenFn := runtime.FuncForPC(reflect.ValueOf(c.KeyGenerator).Pointer())
 	keygenFnName := filepath.Base(keygenFn.Name())
 
-	return fmt.Sprintf("\n{\n\tPath: %s\n\tIgnoreHidden: %t\n\tExtFilter: %s\n\tKeyGenerator: %s\n}", c.Path, c.IgnoreHidden, c.ExtFilter, keygenFnName)
+	return fmt.Sprintf(
+		"\n{\n\tPath: %s\n\tIgnoreHidden: %t\n\tExtInclude: %s\n\tExtExclude: %s\n\tKeyGenerator: %s\n}",
+		c.Path,
+		c.IgnoreHidden,
+		c.ExtInclude,
+		c.ExtExclude,
+		keygenFnName,
+	)
 }
 
 // Sanitizes the provided path, supports ~ and ~username.
@@ -95,18 +103,26 @@ func (c *Cfg) defaults() {
 // Checks if the provided path satisfies the extension filter.
 // The path is expected to be a file.
 func (c *Cfg) satisfiesExtFilter(path string) bool {
-	// Just return early if no filter is set.
-	if len(c.ExtFilter) == 0 {
-		return true
-	}
-
 	ext := strings.ToLower(filepath.Ext(path))
 
-	for _, filter := range c.ExtFilter {
-		if ext == filter {
-			return true
+	// Include takes precedence over exclude.
+	if len(c.ExtInclude) > 0 {
+		for _, filter := range c.ExtInclude {
+			if ext == filter {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	if len(c.ExtExclude) > 0 {
+		for _, filter := range c.ExtExclude {
+			if ext == filter {
+				return false
+			}
 		}
 	}
 
-	return false
+	return true
 }
