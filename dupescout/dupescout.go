@@ -102,9 +102,12 @@ func Start(c Cfg) Dupes {
 
 func consumePairs(pairs <-chan pair, result chan<- results) {
 	m := make(results)
+	mu := new(sync.RWMutex)
 
 	for p := range pairs {
+		mu.Lock()
 		m[p.key] = append(m[p.key], p.path)
+		mu.Unlock()
 	}
 
 	result <- m
