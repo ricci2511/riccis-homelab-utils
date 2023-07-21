@@ -2,6 +2,7 @@ package dupescout
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"os"
 )
@@ -13,12 +14,8 @@ import (
 // Feel free to implement your custom KeyGenerator.
 type keyGeneratorFunc func(path string) (string, error)
 
-// HashKeyGenerator is the default if no KeyGenerator is specified.
-//
-// Generates a md5 hash of the file contents and uses it as the key.
-func HashKeyGenerator(path string) (string, error) {
+func md5HashString(path string, full bool) (string, error) {
 	file, err := os.Open(path)
-
 	if err != nil {
 		return "", err
 	}
@@ -27,11 +24,33 @@ func HashKeyGenerator(path string) (string, error) {
 
 	hash := md5.New()
 
-	if _, err := io.Copy(hash, file); err != nil {
+	// Either copy the entire file contents or just the first 16KB.
+	if full {
+		_, err = io.Copy(hash, file)
+	} else {
+		_, err = io.CopyN(hash, file, 1024*16)
+	}
+
+	if err != nil && err != io.EOF {
 		return "", err
 	}
 
-	return string(hash.Sum(nil)), nil
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// HashKeyGenerator is the default if no KeyGenerator is specified.
+//
+// Generates a md5 hash of the first 16KB of the file contents as the key,
+// which should be enough to achieve a good balance of uniqueness, collision
+// resistance, and performance for most files.
+func HashKeyGenerator(path string) (string, error) {
+	return md5HashString(path, false)
+}
+
+// Generates a md5 hash of the entire file contents as the key, which
+// is a lot slower than HashKeyGenerator but should be more accurate.
+func FullHashKeyGenerator(path string) (string, error) {
+	return md5HashString(path, true)
 }
 
 // MovieTvFileNamesKeyGenerator generates a key based on the movie or series title.
