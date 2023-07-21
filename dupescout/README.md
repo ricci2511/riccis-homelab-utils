@@ -1,5 +1,5 @@
 # dupescout
-A tiny Go package to concurrently find and return duplicate file paths in the given directory.
+A tiny Go package to concurrently find and return duplicate file paths in the given directory and its subdirectories.
 
 ## Installation
 ```bash
