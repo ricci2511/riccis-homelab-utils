@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/ricci2511/riccis-homelab-utils/dupescout"
@@ -19,9 +20,14 @@ func main() {
 	flag.Var(&cfg.ExtExclude, "exclude", "extensions to exclude")
 	flag.Parse()
 
-	// cfg.KeyGenerator = dupescout.FullHashKeyGenerator
+	done := make(chan struct{})
+	go loadingSpinner(done)
 
+	// Start the search for dupes, blocks until all of them have been processed.
 	dupes := dupescout.Start(cfg)
+
+	// Close done channel right after the search is done, triggering the spinner to stop.
+	close(done)
 
 	if len(dupes) == 0 {
 		fmt.Printf("No duplicates found with the provided configuration: %s\n", cfg.String())
@@ -45,6 +51,25 @@ func main() {
 		err := os.Remove(path)
 		if err != nil {
 			log.Fatal(err)
+		}
+	}
+}
+
+var earthSpinner = []string{"🌍", "🌎", "🌏"}
+
+func loadingSpinner(done <-chan struct{}) {
+	i := 0
+	l := len(earthSpinner)
+
+	// Break when done channel is closed, otherwise keep spinning.
+	for {
+		select {
+		case <-done:
+			return
+		default:
+			fmt.Printf("\rScanning... %s", earthSpinner[i])
+			i = (i + 1) % l
+			time.Sleep(150 * time.Millisecond)
 		}
 	}
 }
