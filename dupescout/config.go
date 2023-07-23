@@ -37,6 +37,7 @@ type Cfg struct {
 	ExtInclude   Filters          // file extensions to include (higher priority than exclude)
 	ExtExclude   Filters          // file extensions to exclude
 	KeyGenerator keyGeneratorFunc // key generator function to use
+	Workers      int              // number of workers (defaults to GOMAXPROCS)
 }
 
 // Beauty prints the cfg struct.
@@ -97,6 +98,10 @@ func (c *Cfg) defaults() {
 	// Default to hash key generator.
 	if c.KeyGenerator == nil {
 		c.KeyGenerator = HashKeyGenerator
+	}
+
+	if c.Workers == 0 {
+		c.Workers = runtime.GOMAXPROCS(0)
 	}
 }
 
