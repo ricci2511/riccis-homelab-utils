@@ -19,19 +19,19 @@ type pair struct {
 
 // Dupescout is the main struct that holds the state of the search.
 type dupescout struct {
-	sem      chan bool
+	sem      semaphore
 	wg       *sync.WaitGroup
-	pairs    chan pair
+	pairs    chan *pair
 	result   chan []string
 	shutdown chan os.Signal
 }
 
 func newDupeScout(workers int) *dupescout {
 	return &dupescout{
-		sem:      make(chan bool, workers),
+		sem:      newSemaphore(workers),
 		wg:       new(sync.WaitGroup),
-		pairs:    make(chan pair),
-		result:   make(chan []string),
+		pairs:    make(chan *pair, 500),
+		result:   make(chan []string, 1),
 		shutdown: make(chan os.Signal, 1),
 	}
 }
@@ -44,8 +44,14 @@ func Find(c Cfg) ([]string, error) {
 
 	dup := newDupeScout(c.Workers)
 
-	go dup.consumePairs()
+	// Exclusive wait group for the consumer.
+	// Cant reuse dup.wg since the consumer wont stop until the pairs channel is closed
+	consumerWg := new(sync.WaitGroup)
 
+	consumerWg.Add(1)
+	go dup.consumePairs(consumerWg)
+
+	dup.wg.Add(1)
 	dup.gracefulShutdown()
 
 	dup.wg.Add(1)
@@ -56,12 +62,21 @@ func Find(c Cfg) ([]string, error) {
 	// Signal that no more pairs will be sent, triggering the consumer to process the results.
 	close(dup.pairs)
 
+	consumerWg.Wait()
+
+	close(dup.result)
+
 	return <-dup.result, err
 }
 
 // Consumes pairs received from the pairs channel and processes
 // them into the result channel once no more pairs are sent.
-func (dup *dupescout) consumePairs() {
+func (dup *dupescout) consumePairs(consumerWg *sync.WaitGroup) {
+	defer dup.sem.release()
+	defer consumerWg.Done()
+
+	dup.sem.acquire()
+
 	m := xsync.NewMapOf[[]string]()
 
 	for p := range dup.pairs {
@@ -80,13 +95,12 @@ func (dup *dupescout) consumePairs() {
 // which is then sent to the pairs channel.
 func (dup *dupescout) producePair(path string, keyGen keyGeneratorFunc) {
 	defer dup.workerDone()
+	dup.sem.acquire()
 
 	// Stop pair production if a shutdown signal has been received.
 	if dup.shuttingDown() {
 		return
 	}
-
-	dup.sem <- true
 
 	key, err := keyGen(path)
 	if err != nil {
@@ -97,19 +111,18 @@ func (dup *dupescout) producePair(path string, keyGen keyGeneratorFunc) {
 		return
 	}
 
-	dup.pairs <- pair{key, path}
+	dup.pairs <- &pair{key, path}
 }
 
 // Recursively searches the provided directory for files and subdirectories.
 func (dup *dupescout) search(dir string, c *Cfg) error {
 	defer dup.workerDone()
+	dup.sem.acquire()
 
 	// Stop searching if a shutdown signal has been received.
 	if dup.shuttingDown() {
 		return nil
 	}
-
-	dup.sem <- true
 
 	return filepath.WalkDir(dir, func(path string, de os.DirEntry, err error) error {
 		if err != nil {
@@ -167,8 +180,11 @@ func processResults(m *xsync.MapOf[string, []string]) []string {
 	return res
 }
 
-// Sets up a signal handler for graceful shutdown.
+// Sets up a signal handler worker for graceful shutdown.
 func (dup *dupescout) gracefulShutdown() {
+	defer dup.workerDone()
+	dup.sem.acquire()
+
 	signal.Notify(dup.shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
@@ -191,5 +207,5 @@ func (dup *dupescout) shuttingDown() bool {
 // Helper to signal that a worker is done.
 func (dup *dupescout) workerDone() {
 	dup.wg.Done()
-	func() { <-dup.sem }()
+	dup.sem.release()
 }
