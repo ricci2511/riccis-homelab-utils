@@ -1,5 +1,5 @@
 # dupescout
-A tiny Go package to concurrently find and return duplicate file paths in the given directory and its subdirectories.
+A tiny Go package to concurrently find and return duplicate file paths within the given directory and including its subdirectories.
 
 ## Installation
 ```bash
@@ -18,13 +18,21 @@ import (
 )
 
 func main() {
-    config := dupescout.Cfg{
-        Path: "~/Downloads",
-        IgnoreHidden: false,
-        ExtInclude: []string{".txt", ".json", ".go"}, // only search for .txt, .json and .go files
+    cfg := dupescout.Cfg{
+        Path: "~/Dev",
+		Filters: dupescout.Filters{
+			HiddenInclude: true,
+			DirsExclude: []string{"node_modules"},
+			ExtInclude: []string{".txt", ".json", ".go"}, // only search for .txt, .json and .go files
+		},
     }
 
-    dupes := dupescout.Start(config)
+    fmt.Println("Searching...")
+
+    // Blocks until the search is complete
+    dupes := dupescout.Find(cfg)
+
+    fmt.Println("Search complete")
 
     for _, path := range selectedDupes {
         fmt.Println(path)
@@ -37,10 +45,9 @@ The `dupescout.Cfg` struct has the following fields as of now (more to come prob
 ```go
 type Cfg struct {
 	Path         string           // path to search for duplicates
-	IgnoreHidden bool             // ignore hidden files and directories
-	ExtInclude   Filters          // file extensions to include (higher priority than exclude)
-	ExtExclude   Filters          // file extensions to exclude
+	Filters                       // various filters for the search (see filters.go)
 	KeyGenerator keyGeneratorFunc // key generator function to use
+	Workers      int              // number of workers (defaults to GOMAXPROCS)
 }
 ```
 

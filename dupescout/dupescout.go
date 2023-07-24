@@ -13,7 +13,7 @@ import (
 )
 
 type pair struct {
-	key  string // depends on the KeyGeneratorFunc§
+	key  string // depends on the KeyGeneratorFunc
 	path string
 }
 
@@ -37,7 +37,9 @@ func newDupeScout(workers int) *dupescout {
 }
 
 // Starts the search for duplicates which can be customized by the provided Cfg struct.
-func Start(c Cfg) ([]string, error) {
+//
+// Will block until the search is done.
+func Find(c Cfg) ([]string, error) {
 	c.defaults()
 
 	dup := newDupeScout(c.Workers)
@@ -109,27 +111,35 @@ func (dup *dupescout) search(dir string, c *Cfg) error {
 
 	dup.sem <- true
 
-	return filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+	return filepath.WalkDir(dir, func(path string, de os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if c.IgnoreHidden && strings.HasPrefix(fi.Name(), ".") {
-			if fi.Mode().IsDir() {
+		if !c.HiddenInclude && strings.HasPrefix(de.Name(), ".") {
+			if de.IsDir() {
 				return filepath.SkipDir
 			}
 
 			return nil
 		}
 
-		if fi.Mode().IsDir() && path != dir {
+		if de.IsDir() && path != dir {
+			if c.skipDir(path) {
+				return filepath.SkipDir
+			}
+
 			dup.wg.Add(1)
 			go dup.search(path, c)
 			return filepath.SkipDir
 		}
 
-		if fi.Mode().IsRegular() && fi.Size() > 0 {
-			// If an extension filter is set, skip files that don't match.
+		if de.Type().IsRegular() {
+			fi, err := de.Info()
+			if err != nil || fi.Size() == 0 {
+				return nil
+			}
+
 			if !c.satisfiesExtFilter(path) {
 				return nil
 			}

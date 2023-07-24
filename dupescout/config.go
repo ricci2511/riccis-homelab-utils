@@ -11,46 +11,22 @@ import (
 	"strings"
 )
 
-// The `filters` type satisfies the flag.Value interface, therefore it can be used
-// as follows:
-//
-// `flag.Var(&cfg.ExtInclude, "include", "extensions to include")`
-//
-// Extensions can be provided as a csv or space separated list.
-type Filters []string
-
-func (f *Filters) String() string {
-	return ""
-}
-
-func (f *Filters) Set(val string) error {
-	vals := strings.FieldsFunc(val, func(r rune) bool {
-		return r == ' ' || r == ','
-	})
-	*f = append(*f, vals...)
-	return nil
-}
-
 type Cfg struct {
 	Path         string           // path to search for duplicates
-	IgnoreHidden bool             // ignore hidden files and directories
-	ExtInclude   Filters          // file extensions to include (higher priority than exclude)
-	ExtExclude   Filters          // file extensions to exclude
+	Filters                       // various filters for the search
 	KeyGenerator keyGeneratorFunc // key generator function to use
 	Workers      int              // number of workers (defaults to GOMAXPROCS)
 }
 
-// Beauty prints the cfg struct.
+// Beauty stringifies the Cfg struct.
 func (c *Cfg) String() string {
 	keygenFn := runtime.FuncForPC(reflect.ValueOf(c.KeyGenerator).Pointer())
 	keygenFnName := filepath.Base(keygenFn.Name())
 
 	return fmt.Sprintf(
-		"\n{\n\tPath: %s\n\tIgnoreHidden: %t\n\tExtInclude: %s\n\tExtExclude: %s\n\tKeyGenerator: %s\n}",
+		"\n{\n\tPath: %s\n\tFilters: \n%s\n\tKeyGenerator: %s\n}",
 		c.Path,
-		c.IgnoreHidden,
-		c.ExtInclude,
-		c.ExtExclude,
+		c.Filters.String(),
 		keygenFnName,
 	)
 }
@@ -103,31 +79,4 @@ func (c *Cfg) defaults() {
 	if c.Workers == 0 {
 		c.Workers = runtime.GOMAXPROCS(0)
 	}
-}
-
-// Checks if the provided path satisfies the extension filter.
-// The path is expected to be a file.
-func (c *Cfg) satisfiesExtFilter(path string) bool {
-	ext := strings.ToLower(filepath.Ext(path))
-
-	// Include takes precedence over exclude.
-	if len(c.ExtInclude) > 0 {
-		for _, filter := range c.ExtInclude {
-			if ext == filter {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	if len(c.ExtExclude) > 0 {
-		for _, filter := range c.ExtExclude {
-			if ext == filter {
-				return false
-			}
-		}
-	}
-
-	return true
 }
