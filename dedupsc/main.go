@@ -15,16 +15,22 @@ func main() {
 	cfg := dupescout.Cfg{}
 
 	flag.StringVar(&cfg.Path, "path", "", "path to search for duplicates")
-	flag.BoolVar(&cfg.IgnoreHidden, "ignore-hidden", true, "ignore hidden files and directories")
-	flag.Var(&cfg.ExtInclude, "include", "extensions to include")
-	flag.Var(&cfg.ExtExclude, "exclude", "extensions to exclude")
+	flag.BoolVar(&cfg.SkipSubdirs, "skip-subdirs", false, "skip subdirectories traversal")
+	flag.BoolVar(&cfg.HiddenInclude, "incl-hidden", false, "ignore hidden files and directories")
+	flag.Var(&cfg.ExtInclude, "incl-exts", "extensions to include")
+	flag.Var(&cfg.ExtExclude, "excl-exts", "extensions to exclude")
+	flag.Var(&cfg.DirsExclude, "excl-dirs", "directories or subdirectories to exclude")
+	flag.IntVar(&cfg.Workers, "workers", 0, "number of workers (defaults to GOMAXPROCS)")
 	flag.Parse()
 
 	done := make(chan struct{})
 	go loadingSpinner(done)
 
 	// Start the search for dupes, blocks until all of them have been processed.
-	dupes := dupescout.Start(cfg)
+	dupes, err := dupescout.Find(cfg)
+	if err != nil {
+		log.Println(err)
+	}
 
 	// Close done channel right after the search is done, triggering the spinner to stop.
 	close(done)
@@ -37,11 +43,12 @@ func main() {
 	selectedDupes := []string{}
 
 	prompt := &survey.MultiSelect{
-		Message: "Select duplicates to delete:",
-		Options: dupes,
+		Message:  "Select duplicates to delete:",
+		Options:  dupes,
+		PageSize: 10,
 	}
 
-	err := survey.AskOne(prompt, &selectedDupes)
+	err = survey.AskOne(prompt, &selectedDupes)
 	if err != nil {
 		log.Fatal(err)
 	}
