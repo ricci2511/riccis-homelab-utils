@@ -7,7 +7,7 @@ go get github.com/ricci2511/riccis-homelab-utils/dupescout
 ```
 
 ## Usage
-The package exposes a single function `Start` which takes a `dupescout.Cfg` struct and returns a slice of duplicate file paths.
+The package exposes a single function `Find` which takes a `dupescout.Cfg` struct and returns a slice of duplicate file paths.
 
 ```go
 package main
@@ -18,13 +18,14 @@ import (
 )
 
 func main() {
+    filters:= dupescout.Filters{
+        HiddenInclude: true,
+        DirsExclude: []string{"node_modules"},
+        ExtInclude: []string{".txt", ".json", ".go"}, // only search for .txt, .json and .go files
+    }
     cfg := dupescout.Cfg{
         Path: "~/Dev",
-		Filters: dupescout.Filters{
-			HiddenInclude: true,
-			DirsExclude: []string{"node_modules"},
-			ExtInclude: []string{".txt", ".json", ".go"}, // only search for .txt, .json and .go files
-		},
+        Filters: filters,
     }
 
     fmt.Println("Searching...")
