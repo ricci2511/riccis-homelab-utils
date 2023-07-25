@@ -73,7 +73,7 @@ func (c *Cfg) defaults() {
 
 	// Default to hash key generator.
 	if c.KeyGenerator == nil {
-		c.KeyGenerator = HashKeyGenerator
+		c.KeyGenerator = Crc32HashKeyGenerator
 	}
 
 	if c.Workers == 0 {

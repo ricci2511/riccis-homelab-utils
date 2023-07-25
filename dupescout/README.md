@@ -54,8 +54,12 @@ type Cfg struct {
 ```
 
 The `KeyGenerator` field allows you to specify a custom function to generate a key for a given file path that maps to a slice of duplicate file paths.
-Some `KeyGenerator` functions are already provided, the default one being `dupescout.HashKeyGenerator` which simply hashes the first 16KB of file contents with `crc32` and returns it encoded as a hex string. Other provided functions are:
 
-- `dupescout.FullHashKeyGenerator` is similar to the regular one, except it hashes the entire file contents instead of just the first 16KB. This will be much slower for large files, but should be more accurate for rare cases where the first 16KB are not enough.
-- `dupescout.MovieTvFileNamesKeyGenerator` returns the movie or tv show name, along with the season and episode number and year if applicable. This is useful for finding repeated movies that have different qualities, codecs, etc. Example: `Interstellar - 2014 - Bluray-2160p.mkv` and `Interstellar.2014.1080p.BluRay.x264.mkv` will result in the same key `Interstellar2014`, and thus will be considered duplicates.
-- Maybe more to come if I find any other useful cases.
+Some functions are already provided, the default one being `dupescout.Crc32HashKeyGenerator` which simply hashes the first 16KB of file contents with `crc32`. The functions prefixed with `Full` hash the entire file contents instead of just the first 16KB, which is way slower but should be more accurate for rare cases where the first 16KB are not enough. Available `KeyGenerator` functions are:
+
+- `dupescout.Crc32HashKeyGenerator`
+- `dupescout.FullCrc32HashKeyGenerator`
+- `dupescout.Sha256HashKeyGenerator`
+- `dupescout.FullSha256HashKeyGenerator`
+
+In case you want to use custom logic to generate keys, you simply pass a function that satisfies the `dupescout.KeyGeneratorFunc`. An example can be found [here](https://github.com/ricci2511/riccis-homelab-utils/blob/main/dedupsc/movie-tv-key-generator.go).
