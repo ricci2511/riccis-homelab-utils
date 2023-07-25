@@ -89,17 +89,25 @@ type keyGeneratorPair struct {
 }
 
 var keygenMap = map[string]keyGeneratorPair{
-	"HashKeyGenerator": {
-		description: "Generates a crc32 hash of the first 16KB of the file contents, which should be enough to achieve a good balance of uniqueness, collision resistance, and performance for most files.",
-		fn:          dupescout.HashKeyGenerator,
-	},
-	"FullHashKeyGenerator": {
-		description: "Generates a crc32 hash of the entire file contents. A lot slower than HashKeyGenerator but should be more accurate.",
-		fn:          dupescout.FullHashKeyGenerator,
-	},
 	"MovieTvFileNamesKeyGenerator": {
 		description: "Detects movie/tv show files based on the file name. Useful for detecting repeated movies/tv episodes even if they are different files.",
-		fn:          dupescout.MovieTvFileNamesKeyGenerator,
+		fn:          movieTvFileNamesKeyGenerator, // custom key generator function
+	},
+	"Crc32HashKeyGenerator": {
+		description: "Generates a crc32 hash of the first 16KB of the file contents. Should be enough to achieve a good balance of uniqueness, collision resistance, and performance for most files.",
+		fn:          dupescout.Crc32HashKeyGenerator,
+	},
+	"FullCrc32HashKeyGenerator": {
+		description: "Generates a crc32 hash of the entire file contents. A lot slower than HashKeyGenerator but should be more accurate.",
+		fn:          dupescout.FullCrc32HashKeyGenerator,
+	},
+	"Sha256HashKeyGenerator": {
+		description: "Generates a sha256 hash of the first 16KB of the file contents.",
+		fn:          dupescout.Sha256HashKeyGenerator,
+	},
+	"FullSha256HashKeyGenerator": {
+		description: "Generates a sha256 hash of the entire file contents. Again, a lot slower but should be more accurate.",
+		fn:          dupescout.FullSha256HashKeyGenerator,
 	},
 }
 
