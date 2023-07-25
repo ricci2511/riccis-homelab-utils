@@ -14,7 +14,7 @@ import (
 type Cfg struct {
 	Path         string           // path to search for duplicates
 	Filters                       // various filters for the search
-	KeyGenerator keyGeneratorFunc // key generator function to use
+	KeyGenerator KeyGeneratorFunc // key generator function to use
 	Workers      int              // number of workers (defaults to GOMAXPROCS)
 }
 

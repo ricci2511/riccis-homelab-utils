@@ -8,6 +8,7 @@ go get github.com/ricci2511/riccis-homelab-utils/dupescout
 
 ## Usage
 The package exposes a single function `Find` which takes a `dupescout.Cfg` struct and returns a slice of duplicate file paths.
+Check out [dedupsc](https://github.com/ricci2511/riccis-homelab-utils/tree/main/dedupsc) for another example of how this package can be used.
 
 ```go
 package main
@@ -47,7 +48,7 @@ The `dupescout.Cfg` struct has the following fields as of now (more to come prob
 type Cfg struct {
 	Path         string           // path to search for duplicates
 	Filters                       // various filters for the search (see filters.go)
-	KeyGenerator keyGeneratorFunc // key generator function to use
+	KeyGenerator KeyGeneratorFunc // key generator function to use
 	Workers      int              // number of workers (defaults to GOMAXPROCS)
 }
 ```
@@ -56,5 +57,5 @@ The `KeyGenerator` field allows you to specify a custom function to generate a k
 Some `KeyGenerator` functions are already provided, the default one being `dupescout.HashKeyGenerator` which simply hashes the first 16KB of file contents with `crc32` and returns it encoded as a hex string. Other provided functions are:
 
 - `dupescout.FullHashKeyGenerator` is similar to the regular one, except it hashes the entire file contents instead of just the first 16KB. This will be much slower for large files, but should be more accurate for rare cases where the first 16KB are not enough.
-- `dupescout.MovieTvFileNamesKeyGenerator` returns the movie or tv show name, along with the season and episode number and year if applicable as the key. This is useful for finding duplicate movies that have different qualities, codecs, etc. Example: `Interstellar - 2014 - Bluray-2160p.mkv` and `Interstellar.2014.1080p.BluRay.x264.mkv` will result in the same key `Interstellar-2014`, and thus will be considered duplicates. STILL WORK IN PROGRESS
+- `dupescout.MovieTvFileNamesKeyGenerator` returns the movie or tv show name, along with the season and episode number and year if applicable. This is useful for finding repeated movies that have different qualities, codecs, etc. Example: `Interstellar - 2014 - Bluray-2160p.mkv` and `Interstellar.2014.1080p.BluRay.x264.mkv` will result in the same key `Interstellar2014`, and thus will be considered duplicates.
 - Maybe more to come if I find any other useful cases.
