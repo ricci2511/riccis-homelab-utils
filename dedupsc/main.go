@@ -28,8 +28,7 @@ func main() {
 	done := make(chan struct{})
 	go loadingSpinner(done)
 
-	// Start the search for dupes, blocks until all of them have been processed.
-	dupes, err := dupescout.Find(cfg)
+	dupePaths, err := dupescout.Find(cfg)
 	if err != nil {
 		log.Println(err)
 	}
@@ -37,18 +36,31 @@ func main() {
 	// Close done channel right after the search is done, triggering the spinner to stop.
 	close(done)
 
-	if len(dupes) == 0 {
-		fmt.Printf("No duplicates found with the provided configuration: %s\n", cfg.String())
+	if len(dupePaths) == 0 {
+		fmt.Printf("\nNo duplicates found with the provided configuration: %s\n", cfg.String())
 		os.Exit(0)
 	}
 
-	selectedDupes := []string{}
+	// Range over the duplicate paths and append a human readable size to each one.
+	dupes := []string{}
+	for _, dupe := range dupePaths {
+		fi, err := os.Stat(dupe)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		s := fmt.Sprintf("%s (%s)", dupe, humanReadableSize(fi.Size()))
+		dupes = append(dupes, s)
+	}
 
 	prompt := &survey.MultiSelect{
 		Message:  "Select duplicates to delete:",
 		Options:  dupes,
 		PageSize: 10,
 	}
+
+	selectedDupes := []string{}
 
 	err = survey.AskOne(prompt, &selectedDupes)
 	if err != nil {
@@ -70,7 +82,7 @@ func loadingSpinner(done <-chan struct{}) {
 	i := 0
 	l := len(earthSpinner)
 
-	// Break when done channel is closed, otherwise keep spinning.
+	// Return when done channel is closed, otherwise keep spinning.
 	for {
 		select {
 		case <-done:
@@ -81,6 +93,22 @@ func loadingSpinner(done <-chan struct{}) {
 			time.Sleep(150 * time.Millisecond)
 		}
 	}
+}
+
+func humanReadableSize(size int64) string {
+	const unit = 1024
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+
+	// Calculate the divisor and exponent of the unit symbol to use (KiB, MiB, GiB, etc).
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+
+	return fmt.Sprintf("%.1f %ciB", float64(size)/float64(div), "KMGTPE"[exp])
 }
 
 type keyGeneratorPair struct {
