@@ -8,7 +8,7 @@ import (
 
 // Satisfies the flag.Value interface, string values can be provided as a csv or space separated list.
 //
-// `flag.Var(&cfg.HiddenInclude "include-hidden", "include hidden files and directories")`
+// `flag.Var(&cfg.DirsExclude "exclude-dirs", "exclude directories or subdirectories")
 type FiltersList []string
 
 func (fl *FiltersList) String() string {
@@ -54,7 +54,6 @@ func (f *Filters) skipFile(path string) bool {
 
 	ext := strings.ToLower(filepath.Ext(fileName))
 
-	// Include takes precedence over exclude.
 	if len(f.ExtInclude) > 0 {
 		for _, filter := range f.ExtInclude {
 			if ext == filter {
@@ -62,14 +61,13 @@ func (f *Filters) skipFile(path string) bool {
 			}
 		}
 
+		// Didn't match any of the ExtInclude filters, so skip.
 		return true
 	}
 
-	if len(f.ExtExclude) > 0 {
-		for _, filter := range f.ExtExclude {
-			if ext == filter {
-				return true
-			}
+	for _, filter := range f.ExtExclude {
+		if ext == filter {
+			return true
 		}
 	}
 
@@ -83,10 +81,6 @@ func (f *Filters) skipDir(path string) bool {
 	dirName := filepath.Base(path)
 	if f.SkipSubdirs || skipHidden(dirName, f.HiddenInclude) {
 		return true
-	}
-
-	if len(f.DirsExclude) == 0 {
-		return false
 	}
 
 	for _, filter := range f.DirsExclude {
