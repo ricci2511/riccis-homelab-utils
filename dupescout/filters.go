@@ -43,39 +43,45 @@ func (f *Filters) String() string {
 	)
 }
 
-// Checks if the provided path satisfies the extension filter.
+// Checks if the provided path should be skipped based on file filters.
 //
 // Assumes that the path is a file.
-func (f *Filters) satisfiesExtFilter(path string) bool {
-	ext := strings.ToLower(filepath.Ext(path))
+func (f *Filters) skipFile(path string) bool {
+	fileName := filepath.Base(path)
+	if skipHidden(fileName, f.HiddenInclude) {
+		return true
+	}
+
+	ext := strings.ToLower(filepath.Ext(fileName))
 
 	// Include takes precedence over exclude.
 	if len(f.ExtInclude) > 0 {
 		for _, filter := range f.ExtInclude {
 			if ext == filter {
-				return true
+				return false
 			}
 		}
 
-		return false
+		return true
 	}
 
 	if len(f.ExtExclude) > 0 {
 		for _, filter := range f.ExtExclude {
 			if ext == filter {
-				return false
+				return true
 			}
 		}
 	}
 
-	return true
+	return false
 }
 
 // Checks if the provided path should be skipped based on dir filters.
 //
-// Assumes that the path is a subdirectory.
+// Assumes that the path is a directory.
 func (f *Filters) skipDir(path string) bool {
-	if f.SkipSubdirs {
+	dirName := filepath.Base(path)
+	if f.SkipSubdirs || skipHidden(dirName, f.HiddenInclude) {
 		return true
 	}
 
@@ -83,12 +89,20 @@ func (f *Filters) skipDir(path string) bool {
 		return false
 	}
 
-	folder := filepath.Base(path)
-
 	for _, filter := range f.DirsExclude {
-		if folder == filter {
+		if dirName == filter {
 			return true
 		}
+	}
+
+	return false
+}
+
+// Helper to check if the provided dir or file name is hidden and should be skipped
+// based on the HiddenInclude filter.
+func skipHidden(name string, hiddenInclude bool) bool {
+	if !hiddenInclude && strings.HasPrefix(name, ".") {
+		return true
 	}
 
 	return false

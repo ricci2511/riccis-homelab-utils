@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"sync"
 	"syscall"
 
@@ -129,14 +128,6 @@ func (dup *dupescout) search(dir string, c *Cfg) error {
 			return err
 		}
 
-		if !c.HiddenInclude && strings.HasPrefix(de.Name(), ".") {
-			if de.IsDir() {
-				return filepath.SkipDir
-			}
-
-			return nil
-		}
-
 		if de.IsDir() && path != dir {
 			if c.skipDir(path) {
 				return filepath.SkipDir
@@ -147,13 +138,9 @@ func (dup *dupescout) search(dir string, c *Cfg) error {
 			return filepath.SkipDir
 		}
 
-		if de.Type().IsRegular() {
+		if de.Type().IsRegular() && !c.skipFile(path) {
 			fi, err := de.Info()
 			if err != nil || fi.Size() == 0 {
-				return nil
-			}
-
-			if !c.satisfiesExtFilter(path) {
 				return nil
 			}
 
