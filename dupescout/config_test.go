@@ -2,6 +2,8 @@ package dupescout
 
 import (
 	"os"
+	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -36,12 +38,13 @@ func TestDefaults(t *testing.T) {
 	cfg := &Cfg{}
 	cfg.defaults()
 
-	if cfg.KeyGenerator == nil {
-		t.Errorf("Expected key generator to be set")
+	if reflect.ValueOf(cfg.KeyGenerator).Pointer() != reflect.ValueOf(Crc32HashKeyGenerator).Pointer() {
+		t.Error("Expected key generator to be set to default: Crc32HashKeyGenerator")
 	}
 
-	if cfg.Workers == 0 {
-		t.Errorf("Expected workers to be set")
+	defaultWorkers := runtime.GOMAXPROCS(0)
+	if cfg.Workers != defaultWorkers {
+		t.Errorf("Expected workers to be set to default: %d", defaultWorkers)
 	}
 
 	cfg = &Cfg{Workers: 5}
@@ -49,5 +52,11 @@ func TestDefaults(t *testing.T) {
 
 	if cfg.Workers != 5 {
 		t.Errorf("Expected workers to be 5")
+	}
+
+	cfg.KeyGenerator = Sha256HashKeyGenerator
+
+	if reflect.ValueOf(cfg.KeyGenerator).Pointer() != reflect.ValueOf(Sha256HashKeyGenerator).Pointer() {
+		t.Errorf("Expected key generator to be set to Sha256HashKeyGenerator")
 	}
 }

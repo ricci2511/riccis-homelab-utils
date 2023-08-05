@@ -1,18 +1,21 @@
 package dupescout
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestFiltersListSet(t *testing.T) {
 	var fl FiltersList
 
 	fl.Set("test1,test2")
-	if fl[0] != "test1" || fl[1] != "test2" {
-		t.Error("Expected FiltersList slice to be [test1 test2]")
+	if !reflect.DeepEqual(fl, FiltersList{"test1", "test2"}) {
+		t.Errorf("Expected FiltersList to be [test1 test2], got %v", fl)
 	}
 
 	fl.Set("test3 test4")
-	if fl[2] != "test3" || fl[3] != "test4" {
-		t.Error("Expected FiltersList slice to be [test1 test2 test3 test4]")
+	if !reflect.DeepEqual(fl, FiltersList{"test1", "test2", "test3", "test4"}) {
+		t.Errorf("Expected FiltersList to be [test1 test2 test3 test4], got %v", fl)
 	}
 }
 
