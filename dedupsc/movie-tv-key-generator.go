@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	tvPattern    = regexp.MustCompile(`(.+?)\s*(S\d+E\d+|\d+x\d+|S\d+E\d+-E\d+)`)
+	// Supported episode naming patterns: S01E01, 1x01, S01E01-E02, 1x01-02
+	tvPattern    = regexp.MustCompile(`(.+?)\s*(S\d+E\d+(?:-E\d+)?|\d+x\d+(?:-\d+)?|S\d+E\d+-\d+)`)
 	moviePattern = regexp.MustCompile(`(?:.+?)(?:\s*[-.]\s*|\s+)(\d{4})`)
 	ilegalChars  = ".- ()[]{},:;_"
 )
