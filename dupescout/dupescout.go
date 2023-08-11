@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"syscall"
 
 	"github.com/puzpuzpuz/xsync/v2"
@@ -94,8 +93,6 @@ func (dup *dupescout) producePair(path string, keyGen KeyGeneratorFunc) error {
 	if key == "" {
 		return fmt.Errorf("key generator returned an empty key for path: %s", path)
 	}
-
-	fmt.Println(runtime.NumGoroutine())
 
 	dup.pairs <- &pair{key, path}
 	return nil
