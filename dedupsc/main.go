@@ -13,7 +13,7 @@ import (
 
 func main() {
 	cfg := dupescout.Cfg{}
-
+	cfg.KeyGenerator = keyGeneratorSelect()
 	flag.StringVar(&cfg.Path, "path", "", "path to search for duplicates")
 	flag.BoolVar(&cfg.Filters.SkipSubdirs, "skip-subdirs", false, "skip subdirectories traversal")
 	flag.BoolVar(&cfg.Filters.HiddenInclude, "incl-hidden", false, "ignore hidden files and directories")
@@ -23,35 +23,37 @@ func main() {
 	flag.IntVar(&cfg.Workers, "workers", 0, "number of workers (defaults to GOMAXPROCS)")
 	flag.Parse()
 
-	cfg.KeyGenerator = keyGeneratorSelect()
-
 	done := make(chan struct{})
 	go loadingSpinner(done)
 
-	dupePaths, err := dupescout.Find(cfg)
-	if err != nil {
-		log.Println(err)
-	}
-
-	// Close done channel right after the search is done, triggering the spinner to stop.
-	close(done)
-
-	if len(dupePaths) == 0 {
-		fmt.Printf("\nNo duplicates found with the provided configuration: %s\n", cfg.String())
-		os.Exit(0)
-	}
-
-	// Range over the duplicate paths and append a human readable size to each one.
 	dupes := []string{}
-	for _, dupe := range dupePaths {
-		fi, err := os.Stat(dupe)
+	dupesChan := make(chan string)
+
+	// Start the duplicate search in its own goroutine.
+	go func(cfg dupescout.Cfg, dupesChan chan<- string) {
+		err := dupescout.StreamResults(cfg, dupesChan)
+		if err != nil {
+			log.Println(err)
+		}
+	}(cfg, dupesChan)
+
+	// Append a human readable size to each received duplicate path.
+	for dupePath := range dupesChan {
+		fi, err := os.Stat(dupePath)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-
-		s := fmt.Sprintf("%s (%s)", dupe, humanReadableSize(fi.Size()))
+		s := fmt.Sprintf("%s (%s)", dupePath, humanReadableSize(fi.Size()))
 		dupes = append(dupes, s)
+	}
+
+	// Close done channel right after all duplicates have been found.
+	close(done)
+
+	if len(dupes) == 0 {
+		fmt.Printf("\nNo duplicates found with the provided configuration: %s\n", cfg.String())
+		os.Exit(0)
 	}
 
 	prompt := &survey.MultiSelect{
@@ -61,8 +63,7 @@ func main() {
 	}
 
 	selectedDupes := []string{}
-
-	err = survey.AskOne(prompt, &selectedDupes)
+	err := survey.AskOne(prompt, &selectedDupes)
 	if err != nil {
 		log.Fatal(err)
 	}
