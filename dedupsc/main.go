@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -68,12 +69,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	sizeSuffixRegex := regexp.MustCompile(` \(.+\)$`)
 	for _, path := range selectedDupes {
-		fmt.Printf("Deleting: %s\n", path)
+		path = sizeSuffixRegex.ReplaceAllString(path, "")
 		err := os.Remove(path)
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Printf("Deleted: %s\n", path)
 	}
 }
 
