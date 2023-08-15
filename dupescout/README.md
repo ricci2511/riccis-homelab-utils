@@ -1,5 +1,5 @@
 # dupescout
-A tiny Go package to concurrently find and return duplicate file paths within the given directory and including its subdirectories.
+A tiny Go package to concurrently find duplicate file paths in a given directory. By default the determination of whether two files are duplicates is based on different hashing functions, but the logic can be customized by providing a custom `dupescout.KeyGeneratorFunc` function (see: [key-generator](#key-generator)).
 
 ## Installation
 ```bash
@@ -7,8 +7,12 @@ go get github.com/ricci2511/riccis-homelab-utils/dupescout
 ```
 
 ## Usage
-The package exposes a single function `Find` which takes a `dupescout.Cfg` struct and returns a slice of duplicate file paths.
-Check out [dedupsc](https://github.com/ricci2511/riccis-homelab-utils/tree/main/dedupsc) for another example of how this package can be used.
+The package exposes two functions: `GetResults` and `StreamResults`. Both take a `dupescout.Cfg` struct to configure the search.
+
+- `GetResults` returns a slice of duplicate file paths once the search is complete, essentially blocking until all duplicates have been found. 
+- `StreamResults` aside from `dupescout.Cfg` also takes a string channel as an argument, to which it sends each duplicate file path as they are found. Useful if you want to process the results as they come in instead of waiting for the search to complete.
+
+Check out [dedupsc](https://github.com/ricci2511/riccis-homelab-utils/tree/main/dedupsc) for an example of how to use this package. 
 
 ```go
 package main
@@ -32,7 +36,7 @@ func main() {
     fmt.Println("Searching...")
 
     // Blocks until the search is complete
-    dupes := dupescout.Find(cfg)
+    dupes := dupescout.GetResults(cfg)
 
     fmt.Println("Search complete")
 
@@ -42,7 +46,7 @@ func main() {
 }
 ```
 
-The `dupescout.Cfg` struct has the following fields as of now (more to come probably):
+The `dupescout.Cfg` struct has the following fields as of now:
 
 ```go
 type Cfg struct {
@@ -53,6 +57,7 @@ type Cfg struct {
 }
 ```
 
+## key-generator
 The `KeyGenerator` field allows you to specify a custom function to generate a key for a given file path that maps to a slice of duplicate file paths.
 
 Some functions are already provided, the default one being `dupescout.Crc32HashKeyGenerator` which simply hashes the first 16KB of file contents with `crc32`. The functions prefixed with `Full` hash the entire file contents instead of just the first 16KB, which is way slower but should be more accurate for rare cases where the first 16KB are not enough. Available `KeyGenerator` functions are:
