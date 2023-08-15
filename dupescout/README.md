@@ -9,10 +9,10 @@ go get github.com/ricci2511/riccis-homelab-utils/dupescout
 ## Usage
 The package exposes two functions: `GetResults` and `StreamResults`. Both take a `dupescout.Cfg` struct to configure the search.
 
-- `GetResults` returns a slice of duplicate file paths once the search is complete, essentially blocking until all duplicates have been found. 
-- `StreamResults` aside from `dupescout.Cfg` also takes a string channel as an argument, to which it sends each duplicate file path as they are found. Useful if you want to process the results as they come in instead of waiting for the search to complete.
+- `GetResults` returns a slice of duplicate file paths once the search is complete. 
+- `StreamResults` takes a channel of type `chan string`, to which it sends each duplicate file path as they are found. Useful if you want to process the results as they come in instead of getting them all at once when the search is complete.
 
-Check out [dedupsc](https://github.com/ricci2511/riccis-homelab-utils/tree/main/dedupsc) for an example of how to use this package. 
+Check out [dedupsc](https://github.com/ricci2511/riccis-homelab-utils/tree/main/dedupsc) for an example on how to use this package. 
 
 ```go
 package main

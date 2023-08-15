@@ -61,17 +61,15 @@ func run(c Cfg, resultsChan chan<- []string, dupesChan chan<- string) error {
 	return err
 }
 
-// Runs the duplicate search and returns the results once the search is done (blocking).
+// Runs the duplicate search and returns a slice of all duplicate paths.
 func GetResults(c Cfg) ([]string, error) {
 	results := make(chan []string, 1)
 	err := run(c, results, nil)
 	return <-results, err
 }
 
-// Runs the duplicate search and streams the results to the provided channel as they are
-// found (non-blocking).
-//
-// Must run in a separate goroutine to avoid blocking the main thread.
+// Runs the duplicate search and streams the duplicate paths to the provided channel
+// as they are found.
 func StreamResults(c Cfg, dupesChan chan<- string) error {
 	return run(c, nil, dupesChan)
 }
