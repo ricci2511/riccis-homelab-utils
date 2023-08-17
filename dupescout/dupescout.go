@@ -1,6 +1,7 @@
 package dupescout
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -117,6 +118,9 @@ func (dup *dupescout) producePair(path string, keyGen KeyGeneratorFunc) error {
 
 	key, err := keyGen(path)
 	if err != nil {
+		if errors.Is(err, ErrSkipFile) {
+			return nil // don't collect ErrSkipFile errors
+		}
 		return err
 	}
 

@@ -3,10 +3,19 @@ package dupescout
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"hash"
 	"hash/crc32"
 	"io"
 	"os"
+)
+
+var (
+	// Used to skip a file during key generation.
+	//
+	// These kind of errors are ignored and not returned to the caller
+	// of dupescout.GetResults() or dupescout.StreamResults().
+	ErrSkipFile = fmt.Errorf("skip file")
 )
 
 // KeyGenerator generates a key for a given file path, which then is mapped to
