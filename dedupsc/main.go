@@ -15,13 +15,13 @@ import (
 func main() {
 	cfg := dupescout.Cfg{}
 	cfg.KeyGenerator = keyGeneratorSelect()
-	flag.StringVar(&cfg.Path, "path", "", "path to search for duplicates")
-	flag.BoolVar(&cfg.Filters.SkipSubdirs, "skip-subdirs", false, "skip subdirectories traversal")
-	flag.BoolVar(&cfg.Filters.HiddenInclude, "incl-hidden", false, "ignore hidden files and directories")
-	flag.Var(&cfg.Filters.ExtInclude, "incl-exts", "extensions to include")
-	flag.Var(&cfg.Filters.ExtExclude, "excl-exts", "extensions to exclude")
-	flag.Var(&cfg.Filters.DirsExclude, "excl-dirs", "directories or subdirectories to exclude")
-	flag.IntVar(&cfg.Workers, "workers", 0, "number of workers (defaults to GOMAXPROCS)")
+	flag.StringVar(&cfg.Path, "p", "", "path to search for duplicates")
+	flag.BoolVar(&cfg.Filters.SkipSubdirs, "sd", false, "skip directories traversal")
+	flag.BoolVar(&cfg.Filters.HiddenInclude, "ih", false, "ignore hidden files and directories")
+	flag.Var(&cfg.Filters.ExtInclude, "ie", "extensions to include")
+	flag.Var(&cfg.Filters.ExtExclude, "ee", "extensions to exclude")
+	flag.Var(&cfg.Filters.DirsExclude, "ed", "directories or subdirectories to exclude")
+	flag.IntVar(&cfg.Workers, "w", 0, "number of workers (defaults to GOMAXPROCS)")
 	flag.Parse()
 
 	done := make(chan struct{})
@@ -58,7 +58,7 @@ func main() {
 	}
 
 	prompt := &survey.MultiSelect{
-		Message:  "Select duplicates to delete:",
+		Message:  "Delete selected files:",
 		Options:  dupes,
 		PageSize: 10,
 	}
@@ -125,6 +125,10 @@ var keygenMap = map[string]keyGeneratorPair{
 		description: "Detects movie/tv show files based on the file name. Useful for detecting repeated movies/tv episodes even if they are different files.",
 		fn:          movieTvFileNamesKeyGenerator, // custom key generator function
 	},
+	"AudioCodecKeyGenerator": {
+		description: "Groups files together based on their audio codec.",
+		fn:          audioCodecKeyGenerator(""), // custom key generator function (closure)
+	},
 	"Crc32HashKeyGenerator": {
 		description: "Generates a crc32 hash of the first 16KB of the file contents. Should be enough to achieve a good balance of uniqueness, collision resistance, and performance for most files.",
 		fn:          dupescout.Crc32HashKeyGenerator,
@@ -162,6 +166,21 @@ func keyGeneratorSelect() dupescout.KeyGeneratorFunc {
 	err := survey.AskOne(prompt, &keygenFnName)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if keygenFnName == "AudioCodecKeyGenerator" {
+		// Make the user input the audio codec to group files by.
+		prompt := &survey.Input{
+			Message: "Enter the audio codec to group files by:",
+			Help:    "Examples: aac, ac3, dts, mp3, vorbis, flac, opus, etc.",
+		}
+		var audioCodec string
+		err := survey.AskOne(prompt, &audioCodec)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// Return a closure that returns a KeyGeneratorFunc with the provided audio codec.
+		return audioCodecKeyGenerator(audioCodec)
 	}
 
 	return keygenMap[keygenFnName].fn
