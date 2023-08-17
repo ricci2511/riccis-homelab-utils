@@ -22,10 +22,15 @@ func main() {
 	flag.Var(&cfg.Filters.ExtExclude, "ee", "extensions to exclude")
 	flag.Var(&cfg.Filters.DirsExclude, "ed", "directories or subdirectories to exclude")
 	flag.IntVar(&cfg.Workers, "w", 0, "number of workers (defaults to GOMAXPROCS)")
+	logPaths := flag.Bool("l", false, "duplicate results will be logged to stdout")
 	flag.Parse()
 
-	done := make(chan struct{})
-	go loadingSpinner(done)
+	// When logging, loading spinner is redundant.
+	var done chan struct{}
+	if !*logPaths {
+		done = make(chan struct{})
+		go loadingSpinner(done)
+	}
 
 	dupes := []string{}
 	dupesChan := make(chan string)
@@ -46,11 +51,16 @@ func main() {
 			continue
 		}
 		s := fmt.Sprintf("%s (%s)", dupePath, humanReadableSize(fi.Size()))
+		if *logPaths {
+			fmt.Println(s)
+		}
 		dupes = append(dupes, s)
 	}
 
 	// Close done channel right after all duplicates have been found.
-	close(done)
+	if done != nil {
+		close(done)
+	}
 
 	if len(dupes) == 0 {
 		fmt.Printf("\nNo duplicates found with the provided configuration: %s\n", cfg.String())
