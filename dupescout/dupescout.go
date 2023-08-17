@@ -125,7 +125,7 @@ func (dup *dupescout) producePair(path string, keyGen KeyGeneratorFunc) error {
 	}
 
 	if key == "" {
-		return fmt.Errorf("key generator returned an empty key for path: %s", path)
+		return fmt.Errorf("\nkey generator returned an empty key for path: %s", path)
 	}
 
 	dup.pairs <- &pair{key, path}
