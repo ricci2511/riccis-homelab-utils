@@ -33,10 +33,10 @@ func main() {
 	}
 
 	dupes := []string{}
-	dupesChan := make(chan string)
+	dupesChan := make(chan []string, 10)
 
 	// Start the duplicate search in its own goroutine.
-	go func(cfg dupescout.Cfg, dupesChan chan<- string) {
+	go func(cfg dupescout.Cfg, dupesChan chan<- []string) {
 		err := dupescout.StreamResults(cfg, dupesChan)
 		if err != nil {
 			log.Println(err)
@@ -44,17 +44,19 @@ func main() {
 	}(cfg, dupesChan)
 
 	// Append a human readable size to each received duplicate path.
-	for dupePath := range dupesChan {
-		fi, err := os.Stat(dupePath)
-		if err != nil {
-			log.Println(err)
-			continue
+	for dupePaths := range dupesChan {
+		for _, path := range dupePaths {
+			fi, err := os.Stat(path)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			s := fmt.Sprintf("%s (%s)", path, humanReadableSize(fi.Size()))
+			if *logPaths {
+				fmt.Println(s)
+			}
+			dupes = append(dupes, s)
 		}
-		s := fmt.Sprintf("%s (%s)", dupePath, humanReadableSize(fi.Size()))
-		if *logPaths {
-			fmt.Println(s)
-		}
-		dupes = append(dupes, s)
 	}
 
 	// Close done channel right after all duplicates have been found.
