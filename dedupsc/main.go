@@ -36,7 +36,7 @@ func main() {
 	dupesChan := make(chan []string, 10)
 
 	// Start the duplicate search in its own goroutine.
-	go func(cfg dupescout.Cfg, dupesChan chan<- []string) {
+	go func(cfg dupescout.Cfg, dupesChan chan []string) {
 		err := dupescout.StreamResults(cfg, dupesChan)
 		if err != nil {
 			log.Println(err)
