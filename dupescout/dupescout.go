@@ -55,7 +55,7 @@ func run(c Cfg, dupesChan chan []string, stream bool) error {
 
 // Runs the duplicate search and returns a slice of all duplicate paths.
 func GetResults(c Cfg) ([]string, error) {
-	dupesChan := make(chan []string, 2)
+	dupesChan := make(chan []string, 1)
 	err := run(c, dupesChan, false)
 	return <-dupesChan, err
 }
