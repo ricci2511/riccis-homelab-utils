@@ -86,11 +86,11 @@ func (dup *dupescout) consumePairs(dupesChan chan<- []string, stream bool) {
 		}
 		// When streaming, we can save memory by just keeping the key.
 		// Since paths are being sent, we don't need to keep them all in memory.
-		m.Store(p.key, []string{""})
-		// At this point, paths slice always contains one element. If it's an empty string,
+		m.Store(p.key, nil)
+		// At this point, paths slice is either nil or contains one element. If it's nil,
 		// the previous paths related to this key have already been sent, otherwise we
-		// send the first path along with the current path.
-		if paths[0] != "" {
+		// send the stored path along with the current path.
+		if len(paths) == 1 {
 			dupesChan <- []string{paths[0], p.path}
 			continue
 		}
