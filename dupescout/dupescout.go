@@ -71,22 +71,23 @@ func StreamResults(c Cfg, dupesChan chan []string) error {
 // once the search is done.
 func (dup *dupescout) consumePairs(dupesChan chan []string, stream bool) {
 	defer close(dupesChan)
-	m := xsync.NewMapOf[[]string]()
+
+	// key -> last encountered path
+	// By just keeping the last encountered path, we avoid keeping all duplicates in memory.
+	m := xsync.NewMapOf[string]()
 
 	for p := range dup.pairs {
-		paths, ok := m.Load(p.key)
+		storedPath, ok := m.Load(p.key)
 		if !ok {
-			m.Store(p.key, []string{p.path})
+			m.Store(p.key, p.path)
 			continue
 		}
-		// We can save memory by just keeping the key.
-		// Since paths are being sent, we don't need to keep them all in the map.
-		m.Store(p.key, nil)
-		// At this point, paths slice is either nil or contains one element. If it's nil,
-		// the previous paths related to this key have already been sent, otherwise we
-		// send the stored path along with the current path.
-		if len(paths) == 1 {
-			paths = []string{paths[0], p.path}
+		// When storedPath is not empty, it indicates that we have found the first duplicate,
+		// so we send both the stored path and the current path.
+		if storedPath != "" {
+			// Reset the stored path to avoid sending duplicate paths multiple times.
+			m.Store(p.key, "")
+			paths := []string{storedPath, p.path}
 			if stream {
 				// Streaming, send in chunks.
 				dupesChan <- paths
@@ -101,6 +102,7 @@ func (dup *dupescout) consumePairs(dupesChan chan []string, stream bool) {
 			}
 			continue
 		}
+		// Previous duplicate paths have already been sent, so just send the current path.
 		if stream {
 			dupesChan <- []string{p.path}
 			continue
