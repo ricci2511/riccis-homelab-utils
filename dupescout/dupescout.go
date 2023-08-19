@@ -81,14 +81,15 @@ func (dup *dupescout) consumePairs(dupesChan chan<- []string, stream bool) {
 			continue
 		}
 		m.Store(p.key, append(paths, p.path))
-		if stream {
-			// Also send the fist path if it hasn't been sent yet.
-			if len(paths) == 1 {
-				dupesChan <- []string{paths[0], p.path}
-				continue
-			}
-			dupesChan <- []string{p.path}
+		if !stream {
+			continue
 		}
+		// Also send the fist path if it hasn't been sent yet.
+		if len(paths) == 1 {
+			dupesChan <- []string{paths[0], p.path}
+			continue
+		}
+		dupesChan <- []string{p.path}
 	}
 
 	if stream {
