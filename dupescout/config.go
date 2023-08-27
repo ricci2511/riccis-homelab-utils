@@ -71,12 +71,11 @@ func (c *Cfg) defaults() {
 		c.sanitizePath()
 	}
 
-	// Default to hash key generator.
 	if c.KeyGenerator == nil {
 		c.KeyGenerator = Crc32HashKeyGenerator
 	}
 
 	if c.Workers == 0 {
-		c.Workers = runtime.GOMAXPROCS(0)
+		c.Workers = runtime.GOMAXPROCS(0) / 2
 	}
 }
