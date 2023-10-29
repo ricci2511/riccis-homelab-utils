@@ -29,7 +29,7 @@ func main() {
         ExtInclude: []string{".txt", ".json", ".go"}, // only search for .txt, .json and .go files
     }
     cfg := dupescout.Cfg{
-        Path: "~/Dev",
+        Paths: []string{"~/Dev", "~/Documents"},
         Filters: filters,
     }
 
@@ -50,7 +50,7 @@ The `dupescout.Cfg` struct has the following fields as of now:
 
 ```go
 type Cfg struct {
-	Path         string           // path to search for duplicates
+	Paths                         // paths to search in for duplicates
 	Filters                       // various filters for the search (see filters.go)
 	KeyGenerator KeyGeneratorFunc // key generator function to use
 	Workers      int              // number of workers (defaults to GOMAXPROCS)
