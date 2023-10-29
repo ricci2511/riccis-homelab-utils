@@ -15,7 +15,7 @@ import (
 func main() {
 	cfg := dupescout.Cfg{}
 	cfg.KeyGenerator = keyGeneratorSelect()
-	flag.StringVar(&cfg.Path, "p", "", "path to search for duplicates")
+	flag.Var(&cfg.Paths, "p", "paths to search for duplicates")
 	flag.BoolVar(&cfg.Filters.SkipSubdirs, "sd", false, "skip directories traversal")
 	flag.BoolVar(&cfg.Filters.HiddenInclude, "ih", false, "ignore hidden files and directories")
 	flag.Var(&cfg.Filters.ExtInclude, "ie", "extensions to include")

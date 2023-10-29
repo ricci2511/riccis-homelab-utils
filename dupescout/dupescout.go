@@ -18,11 +18,10 @@ type pair struct {
 	path string
 }
 
-// Dupescout is the main struct that holds the state of the search.
 type dupescout struct {
-	g        *errgroup.Group
-	pairs    chan *pair
-	shutdown chan os.Signal
+	g        *errgroup.Group // "wait group" to limit the num of concurrent search workers
+	pairs    chan *pair      // channel to send pairs to, which are processed and sent to the caller
+	shutdown chan os.Signal  // channel to receive shutdown signals on
 }
 
 func newDupeScout(workers int) *dupescout {
@@ -44,9 +43,12 @@ func run(c Cfg, dupesChan chan []string, stream bool) error {
 	go dup.consumePairs(dupesChan, stream)
 	go gracefulShutdown(dup.shutdown)
 
-	dup.g.Go(func() error {
-		return dup.search(c.Path, &c)
-	})
+	for _, path := range c.Paths {
+		p := path
+		dup.g.Go(func() error {
+			return dup.search(p, &c)
+		})
+	}
 
 	err := dup.g.Wait()
 	close(dup.pairs) // Trigger pair consumer to process the results.
@@ -113,13 +115,13 @@ func (dup *dupescout) consumePairs(dupesChan chan []string, stream bool) {
 // which is then sent to the pairs channel.
 func (dup *dupescout) producePair(path string, keyGen KeyGeneratorFunc) error {
 	if dup.shuttingDown() {
-		return nil
+		return nil // Stop pair production if shutdown is in progress.
 	}
 
 	key, err := keyGen(path)
 	if err != nil {
 		if errors.Is(err, ErrSkipFile) {
-			return nil // don't collect ErrSkipFile errors
+			return nil // Don't collect ErrSkipFile errors
 		}
 		return err
 	}

@@ -8,29 +8,28 @@ import (
 )
 
 func TestSanitizePath(t *testing.T) {
-	cfg := &Cfg{Path: "~/Dev"}
-	cfg.sanitizePath()
+	cfg := &Cfg{Paths: []string{"~/Dev", "~/Dev/../dupescout"}}
+	path := sanitizePath(cfg.Paths[0])
 
 	home, _ := os.UserHomeDir()
 	isWindows := os.PathSeparator == '\\'
 
-	if isWindows && cfg.Path != home+"\\Dev" {
-		t.Errorf("Expected %s, got %s", home+"\\Dev", cfg.Path)
+	if isWindows && path != home+"\\Dev" {
+		t.Errorf("Expected %s, got %s", home+"\\Dev", path)
 	}
 
-	if !isWindows && cfg.Path != home+"/Dev" {
-		t.Errorf("Expected %s, got %s", home+"/Dev", cfg.Path)
+	if !isWindows && path != home+"/Dev" {
+		t.Errorf("Expected %s, got %s", home+"/Dev", path)
 	}
 
-	cfg = &Cfg{Path: "~/Dev/../dupescout"}
-	cfg.sanitizePath()
+	path = sanitizePath(cfg.Paths[1]) // Use second path now
 
-	if isWindows && cfg.Path != home+"\\dupescout" {
-		t.Errorf("Expected %s, got %s", home+"\\dupescout", cfg.Path)
+	if isWindows && path != home+"\\dupescout" {
+		t.Errorf("Expected %s, got %s", home+"\\dupescout", path)
 	}
 
-	if !isWindows && cfg.Path != home+"/dupescout" {
-		t.Errorf("Expected %s, got %s", home+"/dupescout", cfg.Path)
+	if !isWindows && path != home+"/dupescout" {
+		t.Errorf("Expected %s, got %s", home+"/dupescout", path)
 	}
 }
 
@@ -42,7 +41,7 @@ func TestDefaults(t *testing.T) {
 		t.Error("Expected key generator to be set to default: Crc32HashKeyGenerator")
 	}
 
-	defaultWorkers := runtime.GOMAXPROCS(0)
+	defaultWorkers := runtime.GOMAXPROCS(0) / 2
 	if cfg.Workers != defaultWorkers {
 		t.Errorf("Expected workers to be set to default: %d", defaultWorkers)
 	}

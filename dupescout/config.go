@@ -11,8 +11,25 @@ import (
 	"strings"
 )
 
+// Satisfies the flag.Value interface, string values can be provided as a csv or space separated list.
+//
+// `flag.Var(&cfg.Paths, "p", "list of paths to search in for duplicates")`
+type Paths []string
+
+func (p *Paths) String() string {
+	return ""
+}
+
+func (p *Paths) Set(val string) error {
+	vals := strings.FieldsFunc(val, func(r rune) bool {
+		return r == ' ' || r == ','
+	})
+	*p = append(*p, vals...)
+	return nil
+}
+
 type Cfg struct {
-	Path         string           // path to search for duplicates
+	Paths                         // list of paths to search in for duplicates
 	Filters                       // various filters for the search
 	KeyGenerator KeyGeneratorFunc // key generator function to use
 	Workers      int              // number of workers (defaults to GOMAXPROCS)
@@ -25,16 +42,16 @@ func (c *Cfg) String() string {
 
 	return fmt.Sprintf(
 		"\n{\n\tPath: %s\n\tFilters: \n%s\n\tKeyGenerator: %s\n}",
-		c.Path,
+		c.Paths,
 		c.Filters.String(),
 		keygenFnName,
 	)
 }
 
 // Sanitizes the provided path, supports ~ and ~username.
-func (c *Cfg) sanitizePath() {
-	if strings.HasPrefix(c.Path, "~") {
-		firstSlash := strings.Index(c.Path, "/")
+func sanitizePath(path string) string {
+	if strings.HasPrefix(path, "~") {
+		firstSlash := strings.Index(path, "/")
 
 		if firstSlash == 1 {
 			home, err := os.UserHomeDir()
@@ -42,37 +59,39 @@ func (c *Cfg) sanitizePath() {
 				log.Fatal(err)
 			}
 
-			c.Path = strings.Replace(c.Path, "~", home, 1)
+			path = strings.Replace(path, "~", home, 1)
 		} else if firstSlash > 1 {
-			username := c.Path[1:firstSlash]
+			username := path[1:firstSlash]
 			userAccount, err := user.Lookup(username)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			c.Path = strings.Replace(c.Path, c.Path[:firstSlash], userAccount.HomeDir, 1)
+			path = strings.Replace(path, path[:firstSlash], userAccount.HomeDir, 1)
 		}
 	}
 
-	path, err := filepath.Abs(c.Path)
+	path, err := filepath.Abs(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c.Path = path
+	return path
 }
 
 // Sets default values for the cfg struct as needed.
 func (c *Cfg) defaults() {
-	if c.Path == "" {
-		c.Path = "."
-		fmt.Println("No path specified, scanning from current directory")
-	} else {
-		c.sanitizePath()
+	for i, path := range c.Paths {
+		if path == "" {
+			c.Paths[i] = "." // Default to current directory
+			continue
+		}
+
+		c.Paths[i] = sanitizePath(path)
 	}
 
 	if c.KeyGenerator == nil {
-		c.KeyGenerator = Crc32HashKeyGenerator
+		c.KeyGenerator = Crc32HashKeyGenerator // Default to CRC32 (fast and sufficient for most cases)
 	}
 
 	if c.Workers == 0 {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 // Satisfies the flag.Value interface, string values can be provided as a csv or space separated list.
@@ -55,23 +57,10 @@ func (f *Filters) skipFile(path string) bool {
 	ext := strings.ToLower(filepath.Ext(fileName))
 
 	if len(f.ExtInclude) > 0 {
-		for _, filter := range f.ExtInclude {
-			if ext == filter {
-				return false
-			}
-		}
-
-		// Didn't match any of the ExtInclude filters, so skip.
-		return true
+		return !slices.Contains(f.ExtInclude, ext) // Skip files not in include list
 	}
 
-	for _, filter := range f.ExtExclude {
-		if ext == filter {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(f.ExtExclude, ext) // Skip files in exclude list
 }
 
 // Checks if the provided path should be skipped based on dir filters.
@@ -83,21 +72,11 @@ func (f *Filters) skipDir(path string) bool {
 		return true
 	}
 
-	for _, filter := range f.DirsExclude {
-		if dirName == filter {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(f.DirsExclude, dirName) // Skip dirs in exclude list
 }
 
 // Helper to check if the provided dir or file name is hidden and should be skipped
 // based on the HiddenInclude filter.
 func skipHidden(name string, hiddenInclude bool) bool {
-	if !hiddenInclude && strings.HasPrefix(name, ".") {
-		return true
-	}
-
-	return false
+	return !hiddenInclude && strings.HasPrefix(name, ".")
 }
