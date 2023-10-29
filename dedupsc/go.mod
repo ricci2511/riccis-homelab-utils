@@ -1,14 +1,20 @@
 module github.com/ricci2511/riccis-homelab-utils/dedupsc
 
-go 1.20
+go 1.21.3
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.7 // indirect
+	github.com/AlecAivazis/survey/v2 v2.3.7
+	github.com/ricci2511/riccis-homelab-utils/dupescout v0.0.0-20230828120032-2d5706c3f632
+)
+
+require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/mattn/go-colorable v0.1.2 // indirect
-	github.com/mattn/go-isatty v0.0.8 // indirect
-	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
+	github.com/puzpuzpuz/xsync/v2 v2.5.1 // indirect
+	golang.org/x/sync v0.4.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 )
