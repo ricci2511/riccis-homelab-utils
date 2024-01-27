@@ -29,10 +29,10 @@ func (p *Paths) Set(val string) error {
 }
 
 type Cfg struct {
-	KeyGenerator KeyGeneratorFunc
-	Paths
-	Filters
-	Workers int
+	KeyGenerator KeyGeneratorFunc // Function to generate a key based on the file path.
+	Paths                         // List of paths to search in for duplicates.
+	Filters                       // Filters to apply when searching for duplicates.
+	Workers      int              // Number of workers to use when searching for duplicates.
 }
 
 // Beauty stringifies the Cfg struct.

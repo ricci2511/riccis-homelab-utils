@@ -26,11 +26,11 @@ func (fl *FiltersList) Set(val string) error {
 }
 
 type Filters struct {
-	ExtInclude    FiltersList
-	ExtExclude    FiltersList
-	DirsExclude   FiltersList
-	SkipSubdirs   bool
-	HiddenInclude bool
+	ExtInclude    FiltersList // List of file extensions to include.
+	ExtExclude    FiltersList // List of file extensions to exclude.
+	DirsExclude   FiltersList // List of directories or subdirectories to exclude.
+	SkipSubdirs   bool        // Skip subdirectories.
+	HiddenInclude bool        // Include hidden files and directories.
 }
 
 // Beauty stringifies the Filters struct.
