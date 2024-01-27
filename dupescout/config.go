@@ -29,10 +29,10 @@ func (p *Paths) Set(val string) error {
 }
 
 type Cfg struct {
-	Paths                         // list of paths to search in for duplicates
-	Filters                       // various filters for the search
-	KeyGenerator KeyGeneratorFunc // key generator function to use
-	Workers      int              // number of workers (defaults to GOMAXPROCS)
+	KeyGenerator KeyGeneratorFunc
+	Paths
+	Filters
+	Workers int
 }
 
 // Beauty stringifies the Cfg struct.
