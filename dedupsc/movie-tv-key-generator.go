@@ -25,14 +25,14 @@ func movieTvFileNamesKeyGenerator(path string) (string, error) {
 		return "", nil
 	}
 
-	if matches := tvPattern.FindStringSubmatch(fileName); matches != nil && len(matches) > 2 {
+	if matches := tvPattern.FindStringSubmatch(fileName); len(matches) > 2 {
 		// "Breaking Bad - S01E01 - Bluray-1080p" -> "BreakingBadS01E01"
 		// matches[1] = "Breaking Bad", matches[2] = "S01E01"
 		tvKey := matches[1] + matches[2]
 		return removeChars(tvKey, ilegalChars), nil
 	}
 
-	if matches := moviePattern.FindStringSubmatch(fileName); matches != nil && len(matches) > 0 {
+	if matches := moviePattern.FindStringSubmatch(fileName); len(matches) > 0 {
 		// "Avatar - 2009 - Bluray-1080p" -> "Avatar2009"
 		// matches[0] = "Avatar - 2009", matches[1] = "2009"
 		return removeChars(matches[0], ilegalChars), nil

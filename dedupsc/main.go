@@ -16,11 +16,11 @@ func main() {
 	cfg := dupescout.Cfg{}
 	cfg.KeyGenerator = keyGeneratorSelect()
 	flag.Var(&cfg.Paths, "p", "paths to search for duplicates")
-	flag.BoolVar(&cfg.Filters.SkipSubdirs, "sd", false, "skip directories traversal")
-	flag.BoolVar(&cfg.Filters.HiddenInclude, "ih", false, "ignore hidden files and directories")
-	flag.Var(&cfg.Filters.ExtInclude, "ie", "extensions to include")
-	flag.Var(&cfg.Filters.ExtExclude, "ee", "extensions to exclude")
-	flag.Var(&cfg.Filters.DirsExclude, "ed", "directories or subdirectories to exclude")
+	flag.BoolVar(&cfg.SkipSubdirs, "sd", false, "skip directories traversal")
+	flag.BoolVar(&cfg.HiddenInclude, "ih", false, "ignore hidden files and directories")
+	flag.Var(&cfg.ExtInclude, "ie", "extensions to include")
+	flag.Var(&cfg.ExtExclude, "ee", "extensions to exclude")
+	flag.Var(&cfg.DirsExclude, "ed", "directories or subdirectories to exclude")
 	flag.IntVar(&cfg.Workers, "w", 0, "number of workers (defaults to GOMAXPROCS)")
 	logPaths := flag.Bool("l", false, "duplicate results will be logged to stdout")
 	flag.Parse()
@@ -128,8 +128,8 @@ func humanReadableSize(size int64) string {
 }
 
 type keyGeneratorPair struct {
-	description string
 	fn          dupescout.KeyGeneratorFunc
+	description string
 }
 
 var keygenMap = map[string]keyGeneratorPair{
